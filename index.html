@@ -3,85 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dr. Plants: 1000 Day Ant Sim</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Dr. Plants: Ant Empire</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐜</text></svg>">
+    
     <style>
-        body {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        #game-container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 15px;
-            border: 3px solid #00ffff;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-        }
-        .stat-box {
-            display: flex;
-            justify-content: space-around;
-            background: #111;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-        }
+        body { background: #1a1a1a; color: #e0e0e0; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+        #game-container { max-width: 500px; margin: 0 auto; background: #2a2a2a; padding: 20px; border-radius: 15px; border: 3px solid #00ffff; }
+        .stat-box { display: flex; justify-content: space-around; background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
         .stat { color: #00ffff; font-weight: bold; }
         
-        button {
-            background: #00ffff;
-            color: #1a1a1a;
-            border: none;
-            padding: 15px 25px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 10px;
-            transition: transform 0.1s, background 0.3s;
-        }
-        button:active { transform: scale(0.95); }
-        button:disabled { background: #555; cursor: not-allowed; }
-
-        #bakery-progress {
-            width: 100%;
-            height: 20px;
-            background: #444;
-            border-radius: 10px;
-            margin: 10px 0;
-            overflow: hidden;
-            display: none;
-        }
-        #progress-bar {
-            width: 0%;
-            height: 100%;
-            background: #ffcc00;
-            transition: width linear;
-        }
-        .wild-ant-alert {
-            color: #ff4444;
-            font-weight: bold;
-            animation: blink 0.5s infinite;
-        }
-        @keyframes blink { 50% { opacity: 0; } }
+        button { background: #00ffff; color: #111; border: none; padding: 12px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 5px; transition: 0.2s; }
+        button:disabled { background: #555; opacity: 0.5; }
         
-        .upgrade-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #444;
-        }
+        #bakery-progress { width: 100%; height: 15px; background: #444; border-radius: 10px; margin: 10px 0; display: none; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: #ffcc00; transition: width linear; }
+        
+        .alert { color: #ff4444; font-weight: bold; min-height: 24px; margin: 10px; }
+        .battle-zone { background: #441111; padding: 15px; border-radius: 10px; display: none; border: 2px solid red; }
+        
+        .hidden-status { color: #00ff00; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>Ant Colony Sim</h1>
+    <h1>Ant Colony Sim 🐜</h1>
     <p>Day: <span id="day-display">1</span></p>
 
     <div class="stat-box">
@@ -90,108 +36,107 @@
         <div>Bread: <span id="bread-count" class="stat">0</span></div>
     </div>
 
-    <div id="status-msg">The Queen is alone. Find seeds!</div>
+    <div id="status-msg" class="alert">The Queen is alone...</div>
 
-    <div id="bakery-progress">
-        <div id="progress-bar"></div>
+    <div id="bakery-progress"><div id="progress-bar"></div></div>
+
+    <div id="battle-ui" class="battle-zone">
+        <p>WILD ANTS INVADING!</p>
+        <button onclick="fightInvasion()" style="background: red; color: white;">TAP TO FIGHT!</button>
+        <p>Enemies: <span id="enemy-count">0</span></p>
     </div>
 
-    <button onclick="forage()">Forage for Seeds</button>
-    <button id="bakery-btn" onclick="startBakery()" disabled>Start Bakery (5 Seeds)</button>
-
-    <div class="upgrade-section">
-        <h3>Colony Upgrades</h3>
-        <button id="upgrade-btn" onclick="upgradeColony()">Faster Bakers (Cost: 10 Bread)</button>
+    <div id="controls">
+        <button onclick="forage()">Forage for Seeds</button>
+        <button id="bakery-btn" onclick="startBakery()" disabled>Bakery (5 Seeds)</button>
+        <br>
+        <button id="hide-btn" onclick="hideHoney()" style="background: #8B4513; color: white;">Cover in Dirt (2 Bread)</button>
+        <button id="upgrade-btn" onclick="upgradeColony()">Upgrade Mandibles (10 Bread)</button>
     </div>
+    
+    <p id="hide-status" class="hidden-status"></p>
 </div>
 
 <script>
-    // Game Variables
-    let ants = 1;
-    let seeds = 0;
-    let bread = 0;
-    let day = 1;
-    let pickupAmount = 1;
-    let bakeryTime = 5000; // 5 seconds
-    let isBakeryRunning = false;
-    let upgradeCost = 10;
+    let ants = 1, seeds = 0, bread = 0, day = 1;
+    let pickupAmount = 1, bakeryTime = 5000, upgradeCost = 10;
+    let isBakeryRunning = false, enemies = 0, isHidden = false;
 
-    // --- Audio Logic ---
-    // You can replace this URL with a real squeak sound later!
-    const squeak = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3'); 
-
-    function playSqueak() {
-        squeak.currentTime = 0;
-        squeak.play();
-    }
-
-    // --- Core Functions ---
-    function forage() {
-        seeds += pickupAmount;
-        updateUI();
-    }
-
-    function startBakery() {
-        if (seeds >= 5 && !isBakeryRunning) {
-            seeds -= 5;
-            isBakeryRunning = true;
-            document.getElementById('bakery-btn').disabled = true;
-            document.getElementById('bakery-progress').style.display = 'block';
-            
-            const bar = document.getElementById('progress-bar');
-            bar.style.transition = `width ${bakeryTime}ms linear`;
-            bar.style.width = '100%';
-
-            setTimeout(() => {
-                bread += 5;
-                ants += Math.floor(ants * 0.2) + 1; // Population growth!
-                playSqueak();
-                
-                // Reset Bakery
-                isBakeryRunning = false;
-                bar.style.transition = 'none';
-                bar.style.width = '0%';
-                document.getElementById('bakery-progress').style.display = 'none';
-                document.getElementById('status-msg').innerText = "Bread finished! The colony grows! 🥖";
-                updateUI();
-            }, bakeryTime);
-        }
-    }
-
-    function upgradeColony() {
-        if (bread >= upgradeCost) {
-            bread -= upgradeCost;
-            bakeryTime *= 0.7; // 30% faster
-            pickupAmount += 2; // Find more seeds
-            upgradeCost = Math.floor(upgradeCost * 2.5);
-            
-            document.getElementById('upgrade-btn').innerText = `Faster Bakers (Cost: ${upgradeCost} Bread)`;
-            document.getElementById('status-msg').innerText = "The colony is evolving! 🧬";
-            updateUI();
-        }
-    }
+    const squeak = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3');
 
     function updateUI() {
         document.getElementById('ant-count').innerText = ants;
         document.getElementById('seed-count').innerText = seeds;
         document.getElementById('bread-count').innerText = bread;
         document.getElementById('day-display').innerText = day;
-        
-        // Enable bakery button if we have seeds
-        document.getElementById('bakery-btn').disabled = (seeds < 5 || isBakeryRunning);
+        document.getElementById('bakery-btn').disabled = (seeds < 5 || isBakeryRunning || enemies > 0);
+        document.getElementById('upgrade-btn').disabled = (bread < upgradeCost);
+        document.getElementById('hide-btn').disabled = (bread < 2 || isHidden);
     }
 
-    // Game Timer (Every 5 seconds is 1 Day)
+    function forage() { if(enemies === 0) { seeds += pickupAmount; updateUI(); } }
+
+    function startBakery() {
+        seeds -= 5; isBakeryRunning = true; updateUI();
+        document.getElementById('bakery-progress').style.display = 'block';
+        const bar = document.getElementById('progress-bar');
+        bar.style.transition = `width ${bakeryTime}ms linear`;
+        bar.style.width = '100%';
+
+        setTimeout(() => {
+            bread += 5;
+            ants += Math.floor(ants * 0.2) + 1;
+            squeak.play();
+            isBakeryRunning = false;
+            bar.style.transition = 'none'; bar.style.width = '0%';
+            document.getElementById('bakery-progress').style.display = 'none';
+            document.getElementById('status-msg').innerText = "Bread processed! Population Boom! 🥖";
+            updateUI();
+        }, bakeryTime);
+    }
+
+    function hideHoney() {
+        bread -= 2; isHidden = true;
+        document.getElementById('hide-status').innerText = "Colony is hidden in dirt! (Safe)";
+        setTimeout(() => { isHidden = false; document.getElementById('hide-status').innerText = ""; }, 15000);
+        updateUI();
+    }
+
+    function triggerInvasion() {
+        if (isHidden) return; // Genius move: the wild ants can't find you!
+        enemies = Math.floor(ants * 0.5) + 3;
+        document.getElementById('battle-ui').style.display = 'block';
+        document.getElementById('enemy-count').innerText = enemies;
+        document.getElementById('status-msg').innerText = "WAR DECLARED!";
+    }
+
+    function fightInvasion() {
+        enemies--;
+        document.getElementById('enemy-count').innerText = enemies;
+        if (enemies <= 0) {
+            document.getElementById('battle-ui').style.display = 'none';
+            document.getElementById('status-msg').innerText = "Wild ants defeated! 🛡️";
+            updateUI();
+        }
+    }
+
+    function upgradeColony() {
+        bread -= upgradeCost;
+        bakeryTime *= 0.8;
+        pickupAmount += 2;
+        upgradeCost = Math.floor(upgradeCost * 2.5);
+        document.getElementById('upgrade-btn').innerText = `Upgrade Mandibles (${upgradeCost} Bread)`;
+        updateUI();
+    }
+
     setInterval(() => {
         day++;
+        // Higher population = more chance of wild ants [06:40]
+        if (day > 15 && Math.random() > 0.92 && enemies === 0) triggerInvasion();
+        // If ants are invading, you lose bread every day!
+        if (enemies > 0 && bread > 0) bread--; 
         updateUI();
-        
-        // Random Wild Ant Threat
-        if (day > 10 && Math.random() > 0.9) {
-            document.getElementById('status-msg').innerHTML = "<span class='wild-ant-alert'>WILD ANTS SPOTTED!</span>";
-        }
-    }, 5000);
-
+    }, 4000);
 </script>
 </body>
 </html>
