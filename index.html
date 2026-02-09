@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dr. Plants: 1000 Day Empire 🐜</title>
+    <title>Dr. Plants: 1000 Day Empire</title>
     <style>
         body { background: #1a1a1a; color: #e0e0e0; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 10px; }
         #game-container { max-width: 500px; margin: 0 auto; background: #262626; padding: 20px; border-radius: 15px; border: 3px solid #00ffff; position: relative; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
         
-        /* Health Bars */
+        /* Bars */
         .hp-bg { width: 100%; height: 12px; background: #441111; border-radius: 6px; margin: 5px 0; border: 1px solid #333; overflow: hidden; }
         .hp-fill { height: 100%; background: #00ff00; transition: width 0.3s; }
         #enemy-bar { background: #ff4444; }
@@ -16,24 +16,31 @@
         .stat-box { display: flex; flex-wrap: wrap; justify-content: space-around; background: #000; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
         .stat { color: #00ffff; font-weight: bold; }
         
-        button { background: #00ffff; color: #111; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 5px; width: 95%; font-size: 0.9rem; transition: 0.1s; }
-        button:active { transform: scale(0.98); }
+        button { background: #00ffff; color: #111; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 5px; width: 95%; font-size: 0.9rem; }
         button:disabled { background: #444; color: #888; cursor: not-allowed; }
         
         .battle-zone { background: #4a0000; padding: 15px; border-radius: 10px; display: none; border: 2px solid #ff0000; margin: 10px 0; }
-        #combat-log { font-size: 0.75em; color: #ffcccc; height: 60px; overflow-y: hidden; background: #000; padding: 5px; border-radius: 5px; text-align: left; border: 1px solid #444; }
-        
-        #dev-panel { margin-top: 15px; font-size: 0.7em; opacity: 0.5; }
-        #dev-input { background: #000; color: #0f0; border: 1px solid #333; width: 40%; }
+        #combat-log { font-size: 0.75em; color: #ffcccc; height: 80px; overflow-y: hidden; background: #000; padding: 5px; border-radius: 5px; text-align: left; }
+
+        #dev-panel { margin-top: 20px; padding: 10px; border-top: 1px solid #444; font-size: 0.8rem; opacity: 0.7; }
+        #dev-input { background: #000; color: #0f0; border: 1px solid #00ffff; padding: 5px; width: 120px; border-radius: 4px; }
+
+        /* Victory Overlay */
+        #victory-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; border-radius: 15px; flex-direction: column; justify-content: center; align-items: center; color: #00ffff; }
     </style>
 </head>
-<body onload="initGame()">
+<body onload="updateUI()">
 
 <div id="game-container">
-    <div id="queen-hp-area">
-        <div class="hp-bg"><div id="queen-bar" class="hp-fill" style="width: 100%;"></div></div>
-        <small>QUEEN HEALTH: <span id="q-hp-text">100</span>/100</small>
+    <div id="victory-screen">
+        <h1 style="color: gold;">🏆 VICTORY 🏆</h1>
+        <p>Your Empire survived 1000 Days!</p>
+        <div id="final-stats" style="text-align: left; margin: 20px 0;"></div>
+        <button onclick="location.reload()" style="width: auto;">Start New Empire</button>
     </div>
+
+    <div class="hp-bg"><div id="queen-bar" class="hp-fill" style="width: 100%;"></div></div>
+    <small>QUEEN HEALTH: <span id="q-hp-text">100</span>/100</small>
 
     <h1>Day: <span id="day-display">1</span></h1>
     
@@ -49,7 +56,7 @@
     </div>
 
     <div id="battle-ui" class="battle-zone">
-        <strong style="color: #ff4444;">⚠️ INVASION!</strong>
+        <strong style="color: #ff4444;">⚠️ NEST UNDER ATTACK!</strong>
         <div class="hp-bg"><div id="enemy-bar" class="hp-fill" style="width: 100%;"></div></div>
         <button onclick="manualAttack()" style="background: #ff0000; color: white;">DEFENSIVE STRIKE</button>
         <div id="combat-log"></div>
@@ -58,21 +65,22 @@
     <div id="controls">
         <button id="forage-btn" onclick="forage()">Forage Seeds & Honey 🌾🍯</button>
         <button id="bakery-btn" onclick="startBakery()">Bakery (5 Seeds → 5 Bread) 🥖</button>
-        <button id="honey-btn" onclick="useHoney()">Use Honey (Heal Queen +20) 🍯</button>
+        <button id="honey-btn" onclick="useHoney()">Use Honey (Heal Queen) 🍯</button>
         <button id="soldier-btn" onclick="trainSoldier()">Train Soldier (15 Bread) 🛡️</button>
         <button id="dirt-btn" onclick="buyDirt()">Dirt Cover (Def +1) | Cost: <span id="dirt-cost">10</span> 🕳️</button>
-        <button id="upgrade-btn" onclick="upgradeColony()">Mandible Upgrade 💪</button>
+        <button id="upgrade-btn" onclick="upgradeColony()">Mandible Upgrade (<span id="up-cost">10</span> Bread) 💪</button>
     </div>
 
     <div id="dev-panel">
-        Code: <input type="text" id="dev-input"> <button onclick="checkDevCode()" style="width:auto; padding:2px 5px;">Apply</button>
+        DEV CMD: <input type="password" id="dev-input" placeholder="code"> 
+        <button onclick="checkDevCode()" style="width: auto; padding: 5px 10px; font-size: 0.7rem;">Apply</button>
     </div>
 </div>
 
 <script>
     let ants = 1, soldiers = 0, seeds = 0, bread = 0, honey = 0, day = 1;
     let queenHP = 100, pickupAmount = 1, upgradeCost = 10, dirtDefense = 0, dirtCost = 10;
-    let enemyHP = 0, maxEnemyHP = 0, inBattle = false, colonyName = "Colony";
+    let enemyHP = 0, maxEnemyHP = 0, inBattle = false, isIndustrial = false, isGameOver = false;
     let soldierHPList = [];
 
     function log(msg) {
@@ -80,12 +88,8 @@
         l.innerHTML = "> " + msg + "<br>" + l.innerHTML;
     }
 
-    function initGame() {
-        colonyName = prompt("Colony Name:", "Dr. Plants Empire") || "Colony";
-        updateUI();
-    }
-
     function updateUI() {
+        if (isGameOver) return;
         document.getElementById('ant-count').innerText = ants;
         document.getElementById('soldier-count').innerText = soldiers;
         document.getElementById('bread-count').innerText = bread;
@@ -93,9 +97,9 @@
         document.getElementById('honey-count').innerText = honey;
         document.getElementById('day-display').innerText = day;
         document.getElementById('dirt-cost').innerText = dirtCost;
+        document.getElementById('up-cost').innerText = upgradeCost;
         document.getElementById('queen-bar').style.width = queenHP + "%";
         document.getElementById('q-hp-text').innerText = Math.max(0, Math.floor(queenHP));
-        document.getElementById('upgrade-btn').innerText = `Mandible Upgrade (${upgradeCost} Bread)`;
 
         if (inBattle) {
             document.getElementById('battle-ui').style.display = 'block';
@@ -106,122 +110,118 @@
             document.getElementById('forage-btn').disabled = false;
         }
 
-        // Bakery Logic Fix: Only disable if not enough seeds OR already baking
-        if (document.getElementById('bakery-btn').innerText === "Baking... ⏳") {
-            document.getElementById('bakery-btn').disabled = true;
-        } else {
-            document.getElementById('bakery-btn').disabled = (seeds < 5 || inBattle);
+        const bBtn = document.getElementById('bakery-btn');
+        if (!bBtn.innerText.includes("...")) {
+            bBtn.disabled = (seeds < 5 || inBattle);
         }
-
+        
         document.getElementById('honey-btn').disabled = (honey < 1 || queenHP >= 100);
-        document.getElementById('soldier-btn').disabled = (bread < 15 || inBattle);
-        document.getElementById('dirt-btn').disabled = (bread < dirtCost || inBattle);
-        document.getElementById('upgrade-btn').disabled = (bread < upgradeCost || inBattle);
+        document.getElementById('soldier-btn').disabled = (bread < 15);
+        document.getElementById('dirt-btn').disabled = (bread < dirtCost);
+        document.getElementById('upgrade-btn').disabled = (bread < upgradeCost);
+
+        if (day >= 1000) triggerVictory();
+    }
+
+    function triggerVictory() {
+        isGameOver = true;
+        document.getElementById('victory-screen').style.display = 'flex';
+        document.getElementById('final-stats').innerHTML = `
+            * Total Workers: ${ants}<br>
+            * Total Soldiers: ${soldiers}<br>
+            * Mandible Power: ${2 + (pickupAmount * 0.5)}<br>
+            * Dirt Defense: ${dirtDefense}<br>
+            * Honey Left: ${honey}
+        `;
     }
 
     function forage() {
-        if (!inBattle) {
+        if (!inBattle && !isGameOver) {
             seeds += pickupAmount;
-            if (Math.random() > 0.8) { honey++; log("Found rare honey!"); }
+            if (Math.random() > 0.85) { honey++; log("Found honey!"); }
             updateUI();
         }
     }
 
     function startBakery() {
-        if (seeds >= 5 && !inBattle) {
+        if (seeds >= 5 && !isGameOver) {
             seeds -= 5;
-            const btn = document.getElementById('bakery-btn');
-            btn.innerText = "Baking... ⏳";
-            btn.disabled = true;
-            updateUI();
-
-            setTimeout(() => {
-                bread += 5;
-                ants += 2;
-                btn.innerText = "Bakery (5 Seeds → 5 Bread) 🥖";
-                log("Bakery: +5 Bread, +2 Ants");
+            if (isIndustrial) {
+                bread += 5; ants += 2;
                 updateUI();
-            }, 2500);
+            } else {
+                const btn = document.getElementById('bakery-btn');
+                btn.innerText = "Baking... ⏳";
+                btn.disabled = true;
+                setTimeout(() => {
+                    bread += 5; ants += 2;
+                    btn.innerText = "Bakery (5 Seeds → 5 Bread) 🥖";
+                    updateUI();
+                }, 2500);
+            }
         }
     }
 
     function useHoney() {
-        if (honey > 0) {
-            honey--;
-            queenHP = Math.min(100, queenHP + 20);
-            log("Queen healed with honey!");
-            updateUI();
-        }
+        if (honey > 0 && !isGameOver) { honey--; queenHP = Math.min(100, queenHP + 20); updateUI(); }
     }
 
     function buyDirt() {
-        if (bread >= dirtCost) {
-            bread -= dirtCost;
-            dirtDefense += 1;
-            dirtCost = Math.floor(dirtCost * 1.8);
-            log("Dirt cover reinforced!");
-            updateUI();
-        }
-    }
-
-    function triggerInvasion() {
-        inBattle = true;
-        maxEnemyHP = 20 + (day * 3);
-        enemyHP = maxEnemyHP;
-        updateUI();
-        log("Wild Ants are attacking!");
+        if (bread >= dirtCost && !isGameOver) { bread -= dirtCost; dirtDefense++; dirtCost = Math.floor(dirtCost * 1.8); updateUI(); }
     }
 
     function manualAttack() {
-        if (inBattle) {
-            enemyHP -= (2 + (pickupAmount * 0.5));
-            if (enemyHP <= 0) { inBattle = false; log("Invasion repelled!"); }
-            updateUI();
-        }
-    }
-
-    setInterval(() => {
-        if (inBattle) {
-            if (soldiers > 0) {
-                enemyHP -= (soldiers * 1.5);
-                soldierHPList[0] -= Math.max(1, 5 - dirtDefense);
-                if (soldierHPList[0] <= 0) { soldierHPList.shift(); soldiers--; log("Lost a soldier!"); }
-            } else {
-                queenHP -= Math.max(1, 6 - dirtDefense);
-                log("QUEEN TAKING DAMAGE!");
-            }
-            if (enemyHP <= 0) { inBattle = false; enemyHP = 0; }
-            if (queenHP <= 0) { alert("Game Over! Day: " + day); location.reload(); }
-            updateUI();
-        } else {
-            soldierHPList = soldierHPList.map(hp => Math.min(20, hp + 1));
-        }
-    }, 1000);
-
-    setInterval(() => {
-        if (!inBattle) {
-            day++;
-            if (day > 5 && Math.random() > 0.88) triggerInvasion();
-            updateUI();
-        }
-    }, 4000);
-
-    function trainSoldier() {
-        if (bread >= 15) { bread -= 15; soldiers++; soldierHPList.push(20); updateUI(); }
-    }
-
-    function upgradeColony() {
-        if (bread >= upgradeCost) {
-            bread -= upgradeCost; pickupAmount += 3; upgradeCost = Math.floor(upgradeCost * 2.2); updateUI();
+        if (inBattle && !isGameOver) { 
+            enemyHP -= (2 + (pickupAmount * 0.5)); 
+            if (enemyHP <= 0) { inBattle = false; log("Invasion Repelled!"); }
+            updateUI(); 
         }
     }
 
     function checkDevCode() {
-        if (document.getElementById('dev-input').value === 'drplants') {
-            seeds += 500; bread += 500; honey += 10; updateUI();
+        const input = document.getElementById('dev-input');
+        const val = input.value.toLowerCase();
+        if (val === 'drplants') {
+            seeds += 500; bread += 500; honey += 10;
+            log("DEV: Resources Injected!");
+        } else if (val === 'industrialist') {
+            isIndustrial = true;
+            log("DEV: INDUSTRIAL REVOLUTION!");
         }
-        document.getElementById('dev-input').value = "";
+        input.value = "";
+        updateUI();
     }
+
+    // Combat Loop
+    setInterval(() => {
+        if (inBattle && !isGameOver) {
+            if (soldiers > 0) {
+                enemyHP -= (soldiers * 2);
+                soldierHPList[0] -= Math.max(1, 5 - dirtDefense);
+                if (soldierHPList[0] <= 0) { soldierHPList.shift(); soldiers--; log("A Soldier fell!"); }
+            } else {
+                queenHP -= Math.max(1, 6 - dirtDefense);
+            }
+            if (enemyHP <= 0) { inBattle = false; }
+            if (queenHP <= 0) { isGameOver = true; alert("Game Over! Queen Died on Day " + day); location.reload(); }
+            updateUI();
+        }
+    }, 1000);
+
+    // Day Cycle
+    setInterval(() => {
+        if (!inBattle && !isGameOver) {
+            day++;
+            if (day > 5 && Math.random() > 0.88) {
+                inBattle = true; maxEnemyHP = 30 + (day * 4); enemyHP = maxEnemyHP;
+                log("Wild Ants are invading!");
+            }
+            updateUI();
+        }
+    }, 4000);
+
+    function trainSoldier() { if (bread >= 15 && !isGameOver) { bread -= 15; soldiers++; soldierHPList.push(20); updateUI(); } }
+    function upgradeColony() { if (bread >= upgradeCost && !isGameOver) { bread -= upgradeCost; pickupAmount += 2; upgradeCost = Math.floor(upgradeCost * 2.2); updateUI(); } }
 </script>
 </body>
 </html>
