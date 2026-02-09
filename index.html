@@ -4,80 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dr. Plants: 1000 Day Empire 🐜</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐜</text></svg>">
-    
     <style>
-        body { background: #1a1a1a; color: #e0e0e0; font-family: 'Courier New', Courier, monospace; text-align: center; margin: 0; padding: 10px; }
-        #game-container { max-width: 500px; margin: 0 auto; background: #262626; padding: 20px; border-radius: 15px; border: 3px solid #00ffff; position: relative; overflow: hidden; }
+        body { background: #1a1a1a; color: #e0e0e0; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 10px; }
+        #game-container { max-width: 500px; margin: 0 auto; background: #262626; padding: 20px; border-radius: 15px; border: 3px solid #00ffff; position: relative; }
         
-        /* Queen Health Bar */
-        #queen-health-container { width: 100%; height: 20px; background: #441111; border-radius: 10px; margin-bottom: 5px; border: 1px solid #ff4444; overflow: hidden; }
-        #health-bar { width: 100%; height: 100%; background: #ff4444; transition: width 0.3s; }
-        
+        /* Health Bars */
+        .hp-bg { width: 100%; height: 10px; background: #441111; border-radius: 5px; margin: 5px 0; border: 1px solid #333; overflow: hidden; }
+        .hp-fill { height: 100%; background: #ff4444; transition: width 0.2s; }
+        #queen-bar { height: 20px; background: #00ff00; }
+
         .stat-box { display: flex; flex-wrap: wrap; justify-content: space-around; background: #000; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
         .stat { color: #00ffff; font-weight: bold; }
-        .dead { color: #ff6666; font-size: 0.85em; }
         
-        button { background: #00ffff; color: #111; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 5px; width: 90%; transition: 0.1s; }
-        button:active { transform: scale(0.98); }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        button { background: #00ffff; color: #111; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; margin: 5px; width: 90%; }
+        button:disabled { background: #444; color: #888; }
         
-        .battle-zone { background: #4a0000; padding: 15px; border-radius: 10px; display: none; border: 2px solid #ff0000; margin-bottom: 10px; }
-        .alert { color: #ff4444; font-weight: bold; min-height: 40px; margin-bottom: 10px; }
-
-        /* Day 1000 Win Screen */
-        #win-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 255, 255, 0.95); color: #000; z-index: 10; flex-direction: column; justify-content: center; align-items: center; }
+        .battle-zone { background: #4a0000; padding: 15px; border-radius: 10px; display: none; border: 2px solid #ff0000; margin: 10px 0; }
+        #combat-log { font-size: 0.7em; color: #aaa; height: 50px; overflow-y: hidden; background: #000; padding: 5px; border-radius: 5px; text-align: left; }
     </style>
 </head>
-<body>
+<body onload="initGame()">
 
 <div id="game-container">
-    <div id="win-screen">
-        <h1>🏆 DAY 1000 REACHED!</h1>
-        <p>The Empire is Secure.</p>
-        <button onclick="location.reload()" style="background: #000; color: #fff;">START NEW ERA</button>
-    </div>
-
     <div id="queen-health-container">
-        <div id="health-bar"></div>
+        <div class="hp-bg"><div id="queen-bar" class="hp-fill" style="width: 100%;"></div></div>
+        <small>QUEEN VITALITY</small>
     </div>
-    <small>QUEEN STRENGTH</small>
 
     <h1>Day: <span id="day-display">1</span></h1>
-
+    
     <div class="stat-box">
         <div>Workers: <span id="ant-count" class="stat">1</span></div>
         <div>Soldiers: <span id="soldier-count" class="stat">0</span></div>
         <div>Bread: <span id="bread-count" class="stat">0</span></div>
     </div>
 
-    <div class="stat-box" style="border-color: #555;">
-        <div>Seeds: <span id="seed-count" class="stat">0</span></div>
-        <div class="dead">Graveyard: <span id="graveyard-count">0</span></div>
-    </div>
-
-    <div id="status-msg" class="alert">The colony begins...</div>
-
     <div id="battle-ui" class="battle-zone">
-        <p>⚠️ NEST UNDER ATTACK! ⚠️</p>
-        <button onclick="fightInvasion()" style="background: #ff0000; color: white;">TAP TO DEFEND</button>
-        <p>Enemies: <span id="enemy-count">0</span></p>
+        <p>⚠️ NEST UNDER ATTACK!</p>
+        <div class="hp-bg"><div id="enemy-hp-bar" class="hp-fill" style="width: 100%;"></div></div>
+        <small>Enemy Horde Health</small>
+        <button onclick="manualAttack()" style="background: #ff0000; color: white;">TAP TO STRIKE</button>
+        <div id="combat-log"></div>
     </div>
 
     <div id="controls">
         <button id="forage-btn" onclick="forage()">Forage (Seeds) 🌾</button>
-        <button id="bakery-btn" onclick="startBakery()" disabled>Bakery (5 Seeds) 🥖</button>
+        <button id="bakery-btn" onclick="startBakery()">Bakery (5 Seeds) 🥖</button>
         <button id="soldier-btn" onclick="trainSoldier()">Train Soldier (15 Bread) ⚔️</button>
-        <button id="upgrade-btn" onclick="upgradeColony()">Mandible Upgrade (10 Bread) 💪</button>
+        <button id="upgrade-btn" onclick="upgradeColony()">Mandible Upgrade 💪</button>
     </div>
 </div>
 
 <script>
-    let ants = 1, soldiers = 0, seeds = 0, bread = 0, day = 1, dead = 0, queenHP = 100;
-    let pickupAmount = 1, bakeryTime = 4000, upgradeCost = 10, enemies = 0;
+    let ants = 1, soldiers = 0, seeds = 0, bread = 0, day = 1, dead = 0;
+    let queenHP = 100, pickupAmount = 1, upgradeCost = 10;
+    let enemyHP = 0, maxEnemyHP = 0, inBattle = false;
+    let soldierHP = []; // Array to track health of each soldier
 
-    // Fixed Audio: A simple mechanical click (Natural sound)
-    const clickSound = new Audio('https://www.soundjay.com/buttons/button-16.mp3');
+    function playBeep(f, d) {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(f, ctx.currentTime);
+        g.gain.setValueAtTime(0.02, ctx.currentTime);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + d);
+    }
+
+    function log(msg) {
+        const l = document.getElementById('combat-log');
+        l.innerHTML = msg + "<br>" + l.innerHTML;
+    }
 
     function updateUI() {
         document.getElementById('ant-count').innerText = ants;
@@ -85,89 +82,103 @@
         document.getElementById('bread-count').innerText = bread;
         document.getElementById('seed-count').innerText = seeds;
         document.getElementById('day-display').innerText = day;
-        document.getElementById('graveyard-count').innerText = dead;
-        document.getElementById('health-bar').style.width = queenHP + "%";
+        document.getElementById('queen-bar').style.width = queenHP + "%";
+        document.getElementById('upgrade-btn').innerText = `Upgrade (${upgradeCost} Bread)`;
         
-        const inBattle = (enemies > 0);
-        document.getElementById('bakery-btn').disabled = (seeds < 5 || inBattle);
-        document.getElementById('soldier-btn').disabled = (bread < 15 || inBattle);
-        document.getElementById('upgrade-btn').disabled = (bread < upgradeCost || inBattle);
-
-        if (day >= 1000) {
-            document.getElementById('win-screen').style.display = 'flex';
+        if (inBattle) {
+            document.getElementById('enemy-hp-bar').style.width = (enemyHP / maxEnemyHP * 100) + "%";
         }
     }
 
-    function forage() { if(enemies === 0) { seeds += pickupAmount; updateUI(); } }
+    function forage() { if(!inBattle) { seeds += pickupAmount; updateUI(); } }
 
     function trainSoldier() {
-        if (bread >= 15) { bread -= 15; soldiers++; updateUI(); }
+        if (bread >= 15) {
+            bread -= 15;
+            soldiers++;
+            soldierHP.push(20); // Each soldier starts with 20 HP
+            updateUI();
+        }
     }
 
     function startBakery() {
-        if (seeds < 5) return;
-        seeds -= 5; updateUI();
-        setTimeout(() => {
-            bread += 5; ants += 2;
-            clickSound.play(); 
-            document.getElementById('status-msg').innerText = "Bread processed!";
-            updateUI();
-        }, bakeryTime);
+        if (seeds >= 5) {
+            seeds -= 5; updateUI();
+            setTimeout(() => { bread += 5; ants += 2; playBeep(880, 0.1); updateUI(); }, 2000);
+        }
     }
 
     function triggerInvasion() {
-        enemies = Math.floor(ants * 0.7) + 5;
+        inBattle = true;
+        maxEnemyHP = (day * 2) + 20;
+        enemyHP = maxEnemyHP;
         document.getElementById('battle-ui').style.display = 'block';
-        document.getElementById('enemy-count').innerText = enemies;
-        document.getElementById('status-msg').innerText = "WILD COLONY BREACH!";
+        log("Wild ants breached the nest!");
     }
 
-    function fightInvasion() { if (enemies > 0) { enemies--; updateUI(); if(enemies <= 0) endBattle(); } }
-
-    function endBattle() {
-        enemies = 0; document.getElementById('battle-ui').style.display = 'none';
-        document.getElementById('status-msg').innerText = "Area secured."; updateUI();
+    function manualAttack() {
+        if (inBattle) {
+            enemyHP -= (2 + pickupAmount);
+            playBeep(1000, 0.05);
+            checkDeath();
+        }
     }
 
-    // Main Game Loop (Combat & Deaths)
-    setInterval(() => {
-        if (enemies > 0) {
-            enemies -= soldiers; // Soldiers kill enemies 1 per second
-            if (enemies < 0) enemies = 0;
-            
-            // Death chance logic
-            if (Math.random() > 0.85 && soldiers > 0) { soldiers--; dead++; }
-            else if (soldiers === 0 && Math.random() > 0.7 && ants > 1) { ants--; dead++; }
-            
-            // Damage to Queen if undefended
-            if (soldiers === 0 && ants <= 1) {
-                queenHP -= 5;
-                document.getElementById('status-msg').innerText = "QUEEN TAKING DAMAGE!";
-            }
-            
-            if (queenHP <= 0) { alert("The Empire fell on Day " + day); location.reload(); }
-            
-            document.getElementById('enemy-count').innerText = enemies;
-            if(enemies <= 0) endBattle();
+    function checkDeath() {
+        if (enemyHP <= 0) {
+            inBattle = false;
+            document.getElementById('battle-ui').style.display = 'none';
+            log("Victory! Enemy repelled.");
             updateUI();
+        }
+    }
+
+    // Combat Engine
+    setInterval(() => {
+        if (inBattle) {
+            // Soldiers attack enemy
+            let damageToEnemy = soldiers * 2;
+            enemyHP -= damageToEnemy;
+            if (damageToEnemy > 0) log(`Your soldiers deal ${damageToEnemy} dmg.`);
+
+            // Enemy attacks soldiers or queen
+            if (soldiers > 0) {
+                soldierHP[0] -= 5; // Enemy hits the first soldier
+                if (soldierHP[0] <= 0) {
+                    soldierHP.shift();
+                    soldiers--;
+                    dead++;
+                    log("A soldier has fallen!");
+                }
+            } else {
+                queenHP -= 5;
+                log("THE QUEEN IS UNDER ATTACK!");
+            }
+
+            if (queenHP <= 0) { alert("The Empire has fallen."); location.reload(); }
+            checkDeath();
+            updateUI();
+        } else {
+            // Passive healing when not in battle
+            soldierHP = soldierHP.map(hp => Math.min(20, hp + 1));
         }
     }, 1000);
 
-    // Day Cycle
     setInterval(() => {
-        day++;
-        if (day > 10 && Math.random() > 0.90 && enemies === 0) triggerInvasion();
-        updateUI();
+        if (!inBattle) {
+            day++;
+            if (day > 5 && Math.random() > 0.9) triggerInvasion();
+            updateUI();
+        }
     }, 4000);
 
     function upgradeColony() {
         if (bread >= upgradeCost) {
-            bread -= upgradeCost;
-            pickupAmount += 3;
-            upgradeCost = Math.floor(upgradeCost * 2.3);
-            updateUI();
+            bread -= upgradeCost; pickupAmount += 2; upgradeCost *= 2; updateUI();
         }
     }
+
+    function initGame() { updateUI(); }
 </script>
 </body>
 </html>
